@@ -1,0 +1,82 @@
+﻿using Microsoft.AspNetCore.Mvc;
+using WebMarketCompare.Models;
+using WebMarketCompare.Services;
+
+namespace WebMarketCompare.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    public class ProductsController : ControllerBase
+    {
+        private readonly IOzonParserService _ozonParserService;
+        private readonly ILogger<ProductsController> _logger;
+
+        public ProductsController(IOzonParserService ozonParserService, ILogger<ProductsController> logger)
+        {
+            _ozonParserService = ozonParserService;
+            _logger = logger;
+        }
+
+        [HttpGet("by-url")]
+        public async Task<ActionResult<Product>> GetProductByUrl([FromQuery] string url)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(url))
+                {
+                    return BadRequest("URL обязателен");
+                }
+
+                var product = await _ozonParserService.ParseProductAsync(url);
+                return Ok(product);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при получении товара по URL: {Url}", url);
+                return StatusCode(500, "Ошибка при получении данных о товаре");
+            }
+        }
+
+        [HttpGet("by-sku/{sku}")]
+        public async Task<ActionResult<Product>> GetProductBySku(string sku)
+        {
+            try
+            {
+                //if (string.IsNullOrEmpty(sku))
+                //{
+                //    return BadRequest("SKU обязателен");
+                //}
+
+                var product = await _ozonParserService.ParseProductBySkuAsync(sku);
+                return Ok(product);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при получении товара по SKU: {Sku}", sku);
+                return StatusCode(500, "Ошибка при получении данных о товаре блять");
+            }
+        }
+
+        [HttpPost("batch")]
+        public async Task<ActionResult<List<Product>>> GetProductsBatch([FromBody] List<string> skus)
+        {
+            try
+            {
+                if (skus == null || !skus.Any())
+                {
+                    return BadRequest("Список SKU обязателен");
+                }
+
+                var tasks = skus.Select(sku => _ozonParserService.ParseProductBySkuAsync(sku));
+                var products = await Task.WhenAll(tasks);
+
+                return Ok(products.Where(p => p != null).ToList());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при пакетном получении товаров");
+                return StatusCode(500, "Ошибка при получении данных о товарах");
+            }
+        }
+    }
+}
