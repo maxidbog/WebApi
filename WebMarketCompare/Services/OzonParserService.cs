@@ -9,6 +9,7 @@ using System.Threading;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using Microsoft.AspNetCore.Mvc;
+using static System.Net.WebRequestMethods;
 
 
 namespace WebMarketCompare.Services
@@ -37,7 +38,7 @@ namespace WebMarketCompare.Services
             options.AddAdditionalOption("useAutomationExtension", false);
         }
 
-        private string GetJsonFromUrl(string url)
+        private string GetJsonFromUrl(string apiUrl)
         {
             using (var driver = new ChromeDriver(options))
             {
@@ -52,7 +53,6 @@ namespace WebMarketCompare.Services
                     Thread.Sleep(2000);
                     Console.WriteLine("Фурри топ");
                     //Выполняем JavaScript запрос к API
-                    string apiUrl = "https://www.ozon.ru/api/entrypoint-api.bx/page/json/v2?url=https://www.ozon.ru/product/2124720386";
                     string script = $@"
                     return fetch('{apiUrl}', {{
                         method: 'GET',
@@ -131,14 +131,12 @@ namespace WebMarketCompare.Services
         {
             try
             {
-                // Получаем SKU из URL
-                var sku = ExtractSkuFromUrl(productUrl);
-                if (string.IsNullOrEmpty(sku))
+                if (string.IsNullOrEmpty(productUrl))
                 {
-                    throw new ArgumentException("Не удалось извлечь SKU из URL");
+                    throw new ArgumentException("URL не может быть пустым!");
                 }
 
-                return await ParseProductBySkuAsync(sku);
+                return await ParseProductByUrlAsync(productUrl);
             }
             catch (Exception ex)
             {
@@ -147,26 +145,36 @@ namespace WebMarketCompare.Services
             }
         }
 
-        public async Task<Product> ParseProductBySkuAsync(string sku)
+        public async Task<Product> ParseProductBySkuAsync(string Sku)
         {
-            var apiUrl = "https://www.ozon.ru/api/composer-api.bx/page/json/v2?url=/product/1972913384";
-            var response = GetJsonFromUrl(apiUrl);
+            var url = "https://www.ozon.ru/product/" + Sku;
+            return await ParseProductByUrlAsync(url);
+        }
+
+        public async Task<Product> ParseProductByUrlAsync(string url)
+        {
+
+            var apiUrl = "https://www.ozon.ru/api/composer-api.bx/page/json/v2?url=" + url;
+            var json = GetJsonFromUrl(apiUrl);
 
             try
             {
                 // Формируем URL для API Ozon
-                var ozonResponse = JsonSerializer.Deserialize<OzonApiResponse>(response, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
+                //var ozonResponse = JsonSerializer.Deserialize<OzonApiResponse>(response, new JsonSerializerOptions
+                //{
+                //    PropertyNameCaseInsensitive = true
+                //});
 
-                Console.WriteLine( ozonResponse.WidgetStates);
+                //Console.WriteLine( ozonResponse.WidgetStates);
 
-                return ParseProductFromWidgetStates(sku, ozonResponse.WidgetStates);
+                //return ParseProductFromWidgetStates(sku, ozonResponse.WidgetStates);
+                return ExtractProductData(json, url);
+
+
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Ошибка при парсинге товара по SKU: {Sku} {url}", sku, apiUrl);
+                _logger.LogError(ex, "Ошибка при парсинге товара по Url: {url}", apiUrl);
                 throw;
             }
         }
@@ -195,6 +203,182 @@ namespace WebMarketCompare.Services
 
             // Парсим URL
             ParseUrl(product, widgetStates);
+
+            return product;
+        }
+
+        static Product ExtractProductData(string json, string url)
+        {
+            var product = new Product();
+
+            try
+            {
+                var document = JsonDocument.Parse(json);
+                var root = document.RootElement;
+                product.Url = url;
+
+                if (root.TryGetProperty("widgetStates", out var widgetStates))
+                {
+                    // Название товара
+                    if (widgetStates.TryGetProperty("webStickyProducts-726428-default-1", out var stickyProduct))
+                    {
+                        var stickyProductJson = stickyProduct.GetString();
+                        if (!string.IsNullOrEmpty(stickyProductJson))
+                        {
+                            var productDoc = JsonDocument.Parse(stickyProductJson);
+                            if (productDoc.RootElement.TryGetProperty("name", out var nameProperty))
+                            {
+                                product.Name = nameProperty.GetString();
+                            }
+                        }
+                    }
+
+                    // Цена и оригинальная цена
+                    if (widgetStates.TryGetProperty("webPrice-3121879-default-1", out var priceElement))
+                    {
+                        var priceJson = priceElement.GetString();
+                        if (!string.IsNullOrEmpty(priceJson))
+                        {
+                            var priceDoc = JsonDocument.Parse(priceJson);
+                            var priceRoot = priceDoc.RootElement;
+
+                            if (priceRoot.TryGetProperty("cardPrice", out var cardPriceProperty))
+                            {
+                                var value = cardPriceProperty.GetString();
+                                if (int.TryParse(new string(value.Where(c => char.IsDigit(c)).ToArray()), out int cardPrice))
+                                {
+                                    product.CardPrice = cardPrice;
+                                }
+                            }
+
+                            if (priceRoot.TryGetProperty("price", out var priceProperty))
+                            {
+                                var value = priceProperty.GetString();
+                                if (int.TryParse(new string(value.Where(c => char.IsDigit(c)).ToArray()), out int price))
+                                {
+                                    product.Price = price;
+                                }
+                            }
+
+                            if (priceRoot.TryGetProperty("originalPrice", out var originalPriceProperty))
+                            {
+                                var value = originalPriceProperty.GetString();
+                                if (int.TryParse(new string(value.Where(c => char.IsDigit(c)).ToArray()), out int originalPrice))
+                                {
+                                    product.OriginalPrice = originalPrice;
+                                }
+                            }
+
+                            if (priceRoot.TryGetProperty("isAvailable", out var availableProperty))
+                            {
+                                product.IsAvailable = availableProperty.GetBoolean();
+                            }
+                        }
+                    }
+
+                    // Артикул (SKU)
+                    if (widgetStates.TryGetProperty("webProductMainWidget-347746-default-1", out var skuElement))
+                    {
+                        var skuJson = skuElement.GetString();
+                        if (!string.IsNullOrEmpty(skuJson))
+                        {
+                            var skuDoc = JsonDocument.Parse(skuJson);
+                            if (skuDoc.RootElement.TryGetProperty("sku", out var sku))
+                            {
+                                product.Sku = sku.GetString();
+                            }
+                        }
+                    }
+
+                    // Бренд
+                    if (widgetStates.TryGetProperty("webBrand-3530421-default-1", out var brandElement))
+                    {
+                        var brandJson = brandElement.GetString();
+                        if (!string.IsNullOrEmpty(brandJson))
+                        {
+                            var brandDoc = JsonDocument.Parse(brandJson);
+                            var brandRoot = brandDoc.RootElement;
+
+                            // Извлекаем бренд из content -> title -> text
+                            if (brandRoot.TryGetProperty("content", out var contentElement) &&
+                                contentElement.TryGetProperty("title", out var titleElement) &&
+                                titleElement.TryGetProperty("text", out var textElement))
+                            {
+                                // text может быть массивом, берем первый элемент с content
+                                if (textElement.ValueKind == JsonValueKind.Array)
+                                {
+                                    foreach (var item in textElement.EnumerateArray())
+                                    {
+                                        if (item.TryGetProperty("content", out var brandContent))
+                                        {
+                                            product.Brand = brandContent.GetString();
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Рейтинг и количество отзывов
+                    if (widgetStates.TryGetProperty("webSingleProductScore-3386432-default-1", out var ratingElement))
+                    {
+                        var ratingJson = ratingElement.GetString();
+                        if (!string.IsNullOrEmpty(ratingJson))
+                        {
+                            var ratingDoc = JsonDocument.Parse(ratingJson);
+                            var ratingRoot = ratingDoc.RootElement;
+
+                            // Парсим текст вида "4.8 • 609 отзывов"
+                            if (ratingRoot.TryGetProperty("text", out var ratingTextProperty))
+                            {
+                                var ratingText = ratingTextProperty.GetString();
+                                if (!string.IsNullOrEmpty(ratingText))
+                                {
+                                    var parts = ratingText.Split('•');
+                                    if (parts.Length >= 2)
+                                    {
+                                        if (double.TryParse(parts[0].Trim().Replace('.', ','), out double rating))
+                                        {
+                                            product.Rating = rating;
+                                        }
+
+                                        // Извлекаем число из "609 отзывов"
+                                        var reviewsText = parts[1].Trim();
+                                        var digits = new string(reviewsText.Where(char.IsDigit).ToArray());
+                                        if (int.TryParse(digits, out int reviewsCount))
+                                        {
+                                            product.ReviewsCount = reviewsCount;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Изображение
+                    if (widgetStates.TryGetProperty("webGallery-3311626-default-1", out var galleryElement))
+                    {
+                        var galleryJson = galleryElement.GetString();
+                        if (!string.IsNullOrEmpty(galleryJson))
+                        {
+                            var galleryDoc = JsonDocument.Parse(galleryJson);
+                            if (galleryDoc.RootElement.TryGetProperty("coverImage", out var imageProperty))
+                            {
+                                product.ImageUrls.Add(imageProperty.GetString());
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    throw new Exception("в файле не найден widgetStates ");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка при извлечении данных: {ex.Message}");
+            }
 
             return product;
         }
