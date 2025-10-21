@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using System.Text.Json.Nodes;
 using WebMarketCompare.Models;
 using WebMarketCompare.Services;
 
@@ -71,6 +72,24 @@ namespace WebMarketCompare.Controllers
                 var products = await Task.WhenAll(tasks);
 
                 return Ok(products.Where(p => p != null).ToList());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при пакетном получении товаров");
+                return StatusCode(500, "Ошибка при получении данных о товарах");
+            }
+        }
+
+        [HttpPost("compare")]
+        public async Task<ActionResult<List<Product>>> CompareProducts ([FromBody] List<Product> products)
+        {
+            try
+            {
+                if (products == null)
+                {
+                    return BadRequest("Список товаров обязателен");
+                }
+                return Ok(CompareMarkerService.MarkBestCharacteristicsAsync(products));
             }
             catch (Exception ex)
             {

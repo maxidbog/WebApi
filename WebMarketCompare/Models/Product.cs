@@ -1,31 +1,64 @@
-﻿using Swashbuckle.AspNetCore.Annotations;
-using WebMarketCompare.Models;
+﻿using System.Text.Json.Serialization;
 
-namespace WebMarketCompare.Models
+public class Product
 {
-    public class Product
-    {
-        public string Article { get; set; }
-        public string CategoryId { get; set; }
-        public string CategoryName { get; set; }
-        public string ProductUrl { get; set; }
-        public string ProductName { get; set; }
-        public decimal CardPrice { get; set; }
-        public decimal CurrentPrice { get; set; }
-        public decimal OriginalPrice { get; set; }
-        public double? AverageRating { get; set; }
-        public int ReviewsCount { get; set; }
-        public int StockQuantity { get; set; }
-        public string DeliveryTime { get; set; }
-        public string SellerName { get; set; }
-        public string Brand { get; set; }
-        public double? SellerRating { get; set; }
-        public string ImageUrl { get; set; }
-        public string ReturnDeadline { get; set; }
-        public string ReturnConditions { get; set; }
-        public List<CharacteristicType> Characteristics { get; set; } = new();
+    [JsonPropertyName("article")]
+    public string Article { get; set; }
 
-        public bool IsAvailable { get; set; }
-    }
+    [JsonPropertyName("categoryId")]
+    public string CategoryId { get; set; }
 
+    [JsonPropertyName("categoryName")]
+    public string CategoryName { get; set; }
+
+    [JsonPropertyName("productUrl")]
+    public string ProductUrl { get; set; }
+
+    [JsonPropertyName("productName")]
+    public string ProductName { get; set; }
+
+    [JsonPropertyName("cardPrice")]
+    public decimal CardPrice { get; set; }
+
+    [JsonPropertyName("currentPrice")]
+    public decimal CurrentPrice { get; set; }
+
+    [JsonPropertyName("originalPrice")]
+    public decimal OriginalPrice { get; set; }
+
+    [JsonPropertyName("averageRating")]
+    public double? AverageRating { get; set; }
+
+    [JsonPropertyName("reviewsCount")]
+    public int ReviewsCount { get; set; }
+
+    [JsonPropertyName("stockQuantity")]
+    public int StockQuantity { get; set; }
+
+    [JsonPropertyName("deliveryTime")]
+    public string? DeliveryTime { get; set; }
+
+    [JsonPropertyName("sellerName")]
+    public string? SellerName { get; set; }
+
+    [JsonPropertyName("brand")]
+    public string? Brand { get; set; }
+
+    [JsonPropertyName("sellerRating")]
+    public double? SellerRating { get; set; }
+
+    [JsonPropertyName("imageUrl")]
+    public string ImageUrl { get; set; }
+
+    [JsonPropertyName("returnDeadline")]
+    public string? ReturnDeadline { get; set; }
+
+    [JsonPropertyName("returnConditions")]
+    public string? ReturnConditions { get; set; }
+
+    [JsonPropertyName("characteristics")]
+    public List<CharacteristicType> Characteristics { get; set; } = new();
+
+    [JsonPropertyName("isAvailable")]
+    public bool IsAvailable { get; set; }
 }

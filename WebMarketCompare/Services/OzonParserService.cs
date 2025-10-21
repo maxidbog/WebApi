@@ -337,6 +337,32 @@ namespace WebMarketCompare.Services
                             }
                         }
                     }
+
+                    // Продавец
+                    if (widgetStates.TryGetProperty("webCurrentSeller-7772769-default-1", out var webCurrentSeller))
+                    {
+                        var sellerJson = webCurrentSeller.GetString();
+                        if (!string.IsNullOrEmpty(sellerJson))
+                        {
+                            var sellerDoc = JsonDocument.Parse(sellerJson);
+                            try
+                            {
+                                var seller = sellerDoc.RootElement.GetProperty("sellerCell").GetProperty("centerBlock").GetProperty("title").GetProperty("text");
+                                product.SellerName = seller.ToString();
+                            }
+                            catch { }
+
+                            try
+                            {
+                                var rating = sellerDoc.RootElement.GetProperty("rating").GetProperty("title").GetProperty("text");
+                                if (double.TryParse(rating.ToString().Trim().Replace('.', ','), out double sellerRating))
+                                {
+                                    product.SellerRating = sellerRating;
+                                }
+                            }
+                            catch { }
+                        }
+                    }
                 }
                 else
                 {
@@ -398,7 +424,7 @@ namespace WebMarketCompare.Services
                                 {
                                     var characteristicType = new CharacteristicType
                                     {
-                                        Name = characteristicsArray.GetArrayLength() == 1 ? "Основные" : category.GetProperty("title").GetString(),
+                                        Name = characteristicsArray.GetArrayLength() == 1 ? null : category.GetProperty("title").GetString(),
                                         Characteristics = new List<Characteristic>()
                                     };
 
@@ -437,6 +463,30 @@ namespace WebMarketCompare.Services
             catch (Exception ex)
             {
                 Console.WriteLine($"Ошибка при извлечении данных: {ex.Message}");
+            }
+        }
+
+        private void SetProductDataFromCharacteristics(Characteristic characteristic, Product product)
+        {
+            if (characteristic.Name == "Бренд")
+                product.Brand = characteristic.Value;
+
+            switch (characteristic.Name)
+            {
+                case "Бренд":
+                    product.Brand = characteristic.Value;
+                    break;
+                    //    case "Бренд":
+                    //        product.Brand = characteristic.Value;
+                    //        break;
+                    //    case "Бренд":
+                    //        product.Brand = characteristic.Value;
+                    //        break;
+                    //    case "Бренд":
+                    //        product.Brand = characteristic.Value;
+                    //        break;
+                    //}
+                    return;
             }
         }
     }

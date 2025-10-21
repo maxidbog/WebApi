@@ -1,8 +1,10 @@
-﻿namespace WebMarketCompare.Models
+﻿using System.Text.Json.Serialization;
+
+public class CharacteristicType
 {
-    public class CharacteristicType
-    {
-        public string Name { get; set; }
-        public List<Characteristic> Characteristics { get; set; }
-    }
+    [JsonPropertyName("name")]
+    public string? Name { get; set; }
+
+    [JsonPropertyName("characteristics")]
+    public List<Characteristic> Characteristics { get; set; }
 }
