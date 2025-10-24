@@ -57,7 +57,7 @@ public class Product
     public string? ReturnConditions { get; set; }
 
     [JsonPropertyName("characteristics")]
-    public List<CharacteristicType> Characteristics { get; set; } = new();
+    public Dictionary<string, Characteristic> Characteristics { get; set; } = new();
 
     [JsonPropertyName("isAvailable")]
     public bool IsAvailable { get; set; }

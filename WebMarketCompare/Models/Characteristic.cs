@@ -2,6 +2,9 @@
 
 public class Characteristic
 {
+    [JsonPropertyName("category")]
+    public string? Category { get; set; }
+
     [JsonPropertyName("name")]
     public string Name { get; set; }
 

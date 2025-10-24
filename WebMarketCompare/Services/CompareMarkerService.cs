@@ -18,13 +18,11 @@ namespace WebMarketCompare.Services
             {
                 foreach (var characteristic in product.Characteristics)
                 {
-                    foreach (var character in characteristic.Characteristics)
-                    {
-                        if (!dictionary.ContainsKey(character.Name))
-                            dictionary.Add(character.Name, new List<(Characteristic, string)> { });
-                        dictionary[character.Name].Add((character, character.Value));
-                        character.IsBest = null;
-                    }
+                    var character = characteristic.Value;
+                    if (!dictionary.ContainsKey(character.Name))
+                        dictionary.Add(character.Name, new List<(Characteristic, string)> { });
+                    dictionary[character.Name].Add((character, character.Value));
+                    character.IsBest = null;
                 }
             }
             return dictionary;

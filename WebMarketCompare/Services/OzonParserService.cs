@@ -422,11 +422,7 @@ namespace WebMarketCompare.Services
                             {
                                 foreach (var category in characteristicsArray.EnumerateArray())
                                 {
-                                    var characteristicType = new CharacteristicType
-                                    {
-                                        Name = characteristicsArray.GetArrayLength() == 1 ? null : category.GetProperty("title").GetString(),
-                                        Characteristics = new List<Characteristic>()
-                                    };
+                                    var categoryName = characteristicsArray.GetArrayLength() == 1 ? null : category.GetProperty("title").GetString();
 
                                     // Обрабатываем характеристики внутри категории
                                     if (category.TryGetProperty("short", out var shortArray))
@@ -449,11 +445,11 @@ namespace WebMarketCompare.Services
                                                 characteristic.Value = string.Join(", ", values);
                                             }
 
-                                            characteristicType.Characteristics.Add(characteristic);
+                                            characteristic.Category = categoryName;
+
+                                            characteristics.Add(characteristic.Name, characteristic);
                                         }
                                     }
-
-                                    characteristics.Add(characteristicType);
                                 }
                             }
                         }
