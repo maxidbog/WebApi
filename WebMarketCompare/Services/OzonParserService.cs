@@ -38,7 +38,7 @@ namespace WebMarketCompare.Services
             options.AddAdditionalOption("useAutomationExtension", false);
         }
 
-        private string GetJsonFromUrl(string apiUrl)
+        private List<string> GetJsonsFromUrl(List<string> apiUrls)
         {
             using (var driver = new ChromeDriver(options))
             {
@@ -48,14 +48,17 @@ namespace WebMarketCompare.Services
                     IJavaScriptExecutor js = (IJavaScriptExecutor)driver;
                     driver.ExecuteScript("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})");
 
-                    Thread.Sleep(100);
+                    Task.Delay(100).Wait();
 
                     // Сначала посещаем основную страницу
                     driver.Navigate().GoToUrl("https://www.ozon.ru/api/entrypoint-api.bx/page/json/v2?url=https://www.ozon.ru/product/2124720386");
-                    Thread.Sleep(1000);
+                    Task.Delay(2000).Wait();
                     Console.WriteLine("Фурри топ");
                     //Выполняем JavaScript запрос к API
-                    string script = $@"
+                    var result = new List<string>();
+                    foreach (var apiUrl in apiUrls)
+                    {
+                        string script = $@"
                     return fetch('{apiUrl}', {{
                         method: 'GET',
                         headers: {{
@@ -70,16 +73,19 @@ namespace WebMarketCompare.Services
                     .catch(error => 'Error: ' + error);
                 ";
 
-                    // Выполняем JavaScript и получаем результат
-                    string jsonResult = js.ExecuteScript(script) as string;
-                    Console.WriteLine("JSON Response:");
-                    //Console.WriteLine(jsonResult);
-                    return jsonResult;
+                        // Выполняем JavaScript и получаем результат
+                        string jsonResult = js.ExecuteScript(script) as string;
+                        Console.WriteLine("JSON Response:");
+                        //Console.WriteLine(jsonResult);
+                        result.Add(jsonResult);
+                        Task.Delay(100).Wait();
+                    }
+                    return result;
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Error: {ex.Message}");
-                    return "идёшь нахуй";
+                    return new List<string>();
                 }
 
             }
@@ -159,11 +165,14 @@ namespace WebMarketCompare.Services
             //var apiUrl = "https://www.ozon.ru/api/composer-api.bx/page/json/v2?url=" + url;
             //var json = GetJsonFromUrl(apiUrl);
             var product = new Product();
-
+            product.ProductUrl = url;
+            var apiUrlMain = "https://www.ozon.ru/api/composer-api.bx/page/json/v2?url=" + url;
+            var apiUrlCharac = apiUrlMain + "&layout_container=pdpPage2column&layout_page_index=2";
             try
             {
-                ExtractProductData(url, product);
-                ExtractProductCharacteristics(url, product);
+                var jsons = GetJsonsFromUrl(new List<string> { apiUrlMain, apiUrlCharac});
+                ExtractProductData(jsons[0], product);
+                ExtractProductCharacteristics(jsons[1], product);
 
                 return product;
             }
@@ -174,16 +183,12 @@ namespace WebMarketCompare.Services
             }
         }
 
-        private void ExtractProductData(string url, Product product)
+        private void ExtractProductData(string json, Product product)
         {
-            var apiUrl = "https://www.ozon.ru/api/composer-api.bx/page/json/v2?url=" + url;
-            var json = GetJsonFromUrl(apiUrl);
-
             try
             {
                 var document = JsonDocument.Parse(json);
                 var root = document.RootElement;
-                product.ProductUrl = url;
 
                 if (root.TryGetProperty("widgetStates", out var widgetStates))
                 {
@@ -393,11 +398,8 @@ namespace WebMarketCompare.Services
             }
         }
 
-        private void ExtractProductCharacteristics(string url, Product product)
+        private void ExtractProductCharacteristics(string json, Product product)
         {
-            var apiUrl = "https://www.ozon.ru/api/composer-api.bx/page/json/v2?url=" + url + "&layout_container=pdpPage2column&layout_page_index=2";
-            var json = GetJsonFromUrl(apiUrl);
-
             try
             {
                 var document = JsonDocument.Parse(json);

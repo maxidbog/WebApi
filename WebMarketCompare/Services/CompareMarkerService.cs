@@ -60,8 +60,15 @@ namespace WebMarketCompare.Services
                 }
                 //Console.WriteLine(characteristic.Key + " не в списке сравнения");
             }
-            MarkBestAi(CharDict, AiString);
-            Console.WriteLine(AiString);
+            try
+            {
+                MarkBestAi(CharDict, AiString);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка при работе нейросети: {ex.Message}");
+            }
+            //Console.WriteLine(AiString);
 
         }
 
