@@ -47,8 +47,6 @@ namespace WebMarketCompare.Services
                     // Убираем webdriver property
                     IJavaScriptExecutor js = (IJavaScriptExecutor)driver;
                     driver.ExecuteScript("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})");
-
-                    Task.Delay(100).Wait();
                     //Выполняем JavaScript запрос к API
                     var result = new List<string>();
                     foreach (var apiUrl in apiUrls)
@@ -74,7 +72,7 @@ namespace WebMarketCompare.Services
                         Console.WriteLine("JSON Response:");
                         //Console.WriteLine(jsonResult);
                         result.Add(jsonResult);
-                        Task.Delay(100).Wait();
+                        Task.Delay(10).Wait();
                     }
                     return result;
                 }
