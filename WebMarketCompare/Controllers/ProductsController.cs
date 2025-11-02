@@ -10,17 +10,20 @@ namespace WebMarketCompare.Controllers
     public class ProductsController : ControllerBase
     {
         private readonly IOzonParserService _ozonParserService;
+        private readonly IWBParserService _wbParserService;
         private readonly ILogger<ProductsController> _logger;
 
-        public ProductsController(IOzonParserService ozonParserService, ILogger<ProductsController> logger)
+        public ProductsController(IOzonParserService ozonParserService, ILogger<ProductsController> logger, IWBParserService wbParserService)
         {
             _ozonParserService = ozonParserService;
             _logger = logger;
+            _wbParserService = wbParserService;
         }
 
         [HttpGet("by-url")]
         public async Task<ActionResult<Product>> GetProductByUrl([FromQuery] string url)
         {
+            var product = new Product();
             try
             {
                 if (string.IsNullOrEmpty(url))
@@ -28,7 +31,25 @@ namespace WebMarketCompare.Controllers
                     return BadRequest("URL обязателен");
                 }
 
-                var product = await _ozonParserService.ParseProductAsync(url);
+                var uri = new Uri(url);
+
+                switch (uri.Authority)
+                {
+                    case "www.ozon.ru":
+                        {
+                            product = await _ozonParserService.ParseProductAsync(url);
+                            break;
+                        }
+
+                    case "www.wildberries.ru":
+                        {
+                            product = await _wbParserService.ParseProductAsync(url);
+                            break;
+                        }
+
+                    default:
+                        return BadRequest("Маркетплейс не поддерживается");
+                }
                 return Ok(product);
             }
             catch (Exception ex)
@@ -38,7 +59,7 @@ namespace WebMarketCompare.Controllers
             }
         }
 
-        [HttpGet("by-sku/{sku}")]
+        [HttpGet("by-sku-ozon/{sku}")]
         public async Task<ActionResult<Product>> GetProductBySku(string sku)
         {
             try

@@ -20,6 +20,17 @@ builder.Services.AddHttpClient<IOzonParserService, OzonParserService>()
         ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
     });
 
+builder.Services.AddHttpClient<IWBParserService, WBParserService>()
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+    {
+        CookieContainer = new CookieContainer(),
+        AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
+        UseCookies = true,
+        AllowAutoRedirect = true,
+        UseProxy = false,
+        ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
+    });
+
 // Настройка CORS для фронтенда
 builder.Services.AddCors(options =>
 {
