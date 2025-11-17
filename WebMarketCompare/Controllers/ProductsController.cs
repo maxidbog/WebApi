@@ -31,25 +31,10 @@ namespace WebMarketCompare.Controllers
                     return BadRequest("URL обязателен");
                 }
 
-                var uri = new Uri(url);
+                product = await GetProductByUrlAsync(url);
 
-                switch (uri.Authority)
-                {
-                    case "www.ozon.ru":
-                        {
-                            product = await _ozonParserService.ParseProductAsync(url);
-                            break;
-                        }
+                if (product == null) return BadRequest("Данный маркетплейс не поддерживается");
 
-                    case "www.wildberries.ru":
-                        {
-                            product = await _wbParserService.ParseProductAsync(url);
-                            break;
-                        }
-
-                    default:
-                        return BadRequest("Маркетплейс не поддерживается");
-                }
                 return Ok(product);
             }
             catch (Exception ex)
@@ -101,6 +86,28 @@ namespace WebMarketCompare.Controllers
             }
         }
 
+        [HttpPost("batch-url")]
+        public async Task<ActionResult<List<Product>>> GetProductsBatchUrl([FromBody] List<string> urls)
+        {
+            try
+            {
+                if (urls == null || !urls.Any())
+                {
+                    return BadRequest("Список URL обязателен");
+                }
+
+                var tasks = urls.Select(url => GetProductByUrlAsync(url));
+                var products = await Task.WhenAll(tasks);
+
+                return Ok(products.Where(p => p != null).ToList());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при пакетном получении товаров");
+                return StatusCode(500, "Ошибка при получении данных о товарах");
+            }
+        }
+
         [HttpPost("compare")]
         public async Task<ActionResult<List<Product>>> CompareProducts ([FromBody] List<Product> products)
         {
@@ -116,6 +123,29 @@ namespace WebMarketCompare.Controllers
             {
                 _logger.LogError(ex, "Ошибка при пакетном получении товаров");
                 return StatusCode(500, "Ошибка при получении данных о товарах");
+            }
+        }
+
+        private async Task<Product> GetProductByUrlAsync (string url)
+        {
+            var uri = new Uri(url);
+
+            switch (uri.Authority)
+            {
+                case "www.ozon.ru":
+                    {
+                        return await _ozonParserService.ParseProductAsync(url);
+                        break;
+                    }
+
+                case "www.wildberries.ru":
+                    {
+                        return await _wbParserService.ParseProductAsync(url);
+                        break;
+                    }
+
+                default:
+                    return null;
             }
         }
     }

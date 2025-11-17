@@ -6,7 +6,7 @@ public class Product
     public string Article { get; set; }
 
     [JsonPropertyName("categoryId")]
-    public string CategoryId { get; set; }
+    public string? CategoryId { get; set; }
 
     [JsonPropertyName("categoryName")]
     public string CategoryName { get; set; }
