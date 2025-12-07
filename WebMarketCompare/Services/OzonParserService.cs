@@ -53,7 +53,6 @@ namespace WebMarketCompare.Services
                     // Сначала посещаем основную страницу
                     driver.Navigate().GoToUrl("https://www.ozon.ru/api/entrypoint-api.bx/page/json/v2?url=https://www.ozon.ru/product/2124720386");
                     Task.Delay(2000).Wait();
-                    Console.WriteLine("Фурри топ");
                     //Выполняем JavaScript запрос к API
                     var result = new List<string>();
                     foreach (var apiUrl in apiUrls)
@@ -72,10 +71,8 @@ namespace WebMarketCompare.Services
                     .then(data => data)
                     .catch(error => 'Error: ' + error);
                 ";
-
-                        // Выполняем JavaScript и получаем результат
+                        Console.WriteLine("Extracting JSON...");
                         string jsonResult = js.ExecuteScript(script) as string;
-                        Console.WriteLine("JSON Response:");
                         //Console.WriteLine(jsonResult);
                         result.Add(jsonResult);
                         Task.Delay(100).Wait();
@@ -87,7 +84,7 @@ namespace WebMarketCompare.Services
                     Console.WriteLine($"Error: {ex.Message}");
                     return new List<string>();
                 }
-
+                driver.Dispose();
             }
 
 

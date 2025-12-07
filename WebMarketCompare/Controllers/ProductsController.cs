@@ -64,7 +64,7 @@ namespace WebMarketCompare.Controllers
             }
         }
 
-        [HttpPost("batch")]
+        [HttpPost("batch-sku-ozon")]
         public async Task<ActionResult<List<Product>>> GetProductsBatch([FromBody] List<string> skus)
         {
             try
@@ -122,6 +122,7 @@ namespace WebMarketCompare.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Ошибка при пакетном получении товаров");
+                Console.WriteLine(ex);
                 return StatusCode(500, "Ошибка при получении данных о товарах");
             }
         }

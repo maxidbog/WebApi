@@ -9,7 +9,7 @@ namespace WebMarketCompare.Services
     public class CompareMarkerService
     {
         static ChatClient client = new ChatClient(
-            model: "deepseek-v3.1",
+            model: "gpt-5.1",
             credential: new ApiKeyCredential("sk-voidai-xFcSkgOmQA5ToUTKetA7xKWcScWDC_XZ6XFVWUqxgYCluJdv6vtl-5ebBs2BxInEEzcL4PqI9M5mtmKDBEDeuBUSOps1qYOd4iZ3hUIPZVCPIM9T9ptHHqgGiYAeN1ylZuirwA"),
             options: new OpenAIClientOptions()
             {
@@ -21,7 +21,7 @@ namespace WebMarketCompare.Services
         {
             StandardProducts(products);
             var charactDict = GetCharacteristicsDict(products);
-            MarkBestCharacteristic(charactDict);
+            MarkBestCharacteristic(charactDict, products.Count);
             return products;
 
         }
@@ -41,65 +41,51 @@ namespace WebMarketCompare.Services
             return dictionary;
         }
 
-        private static void MarkBestCharacteristic(Dictionary<string, List<(Product, string)>> CharDict)
+        private static void MarkBestCharacteristic(Dictionary<string, List<(Product, string)>> CharDict, int productsCount)
         {
             var AiString = string.Empty;
             foreach (var characteristic in CharDict)
             {
-                if (CompareDirections.TryGetComparisonDirection(characteristic.Key, characteristic.Value[0].Item1.CategoryName, out var charType))
+                if (CharDict[characteristic.Key].Count == productsCount)
                 {
-                    var bests = FindBests(characteristic.Value, charType, characteristic.Key);
-                    foreach (var charac in bests)
-                    {
-                        Console.WriteLine( charac.Name + charac.Value);
-                        charac.IsBest = true;
-                    }
-                }
-                else if (true)
-                {
-                    //var bests = FindBestsAI(characteristic.Value, charType, characteristic.Key);
-                    //foreach (var charac in bests)
-                    //    charac.IsBest = true;
-                    AiString += $"{characteristic.Key} : {string.Join(";#;", characteristic.Value.Select(x => '"' + x.Item2 + '"'))}\n";
+                    AiString += $"{characteristic.Key}:{string.Join("###", characteristic.Value.Select(x => x.Item2))}\n";
                 }
                 //Console.WriteLine(characteristic.Key + " не в списке сравнения");
             }
-            try
-            {
-                MarkBestAi(CharDict, AiString);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Ошибка при работе нейросети: {ex.Message}");
-            }
+            MarkBestAi(CharDict, AiString);
             //Console.WriteLine(AiString);
 
         }
 
         private static void MarkBestAi(Dictionary<string, List<(Product, string)>> Dict, string charString)
         {
-            var headerString = @"Проанализируй список характеристик товаров. Сравни их и для каждой категории характеристик выбери единственный вариант с НАИЛУЧШИМ значением.
+            var headerString = $"Мы сравниваем: {Dict.ElementAt(0).Value[0].Item1.CategoryName}" + @"Проанализируй список характеристик  товаров, разделенных символом ""###"". Для каждой категории характеристик сравни значения, нормализуй единицы измерения только внутренне для сравнения (например, преобразуй см в м, но не изменяй выводимое значение), и выбери единственный вариант с НАИЛУЧШИМ объективным значением (чем выше числовое значение, тем лучше; для технологий - новее/качественнее).
 
 **Правила форматирования ответа:**
 - Каждая характеристика — с новой строки.
-- Ввод: Название характеристики: ""Значение1"";#;""Значение2""....;#;""Значениеn"".
-- Формат: `Название характеристики: Значение`, например: Процессор: Snapdragon.
-- Не меняй строки.
-- Не включай в ответ никакие другие комментарии, пояснения или символы.
+- Формат: `Название характеристики: Значение` (используй ОРИГИНАЛЬНОЕ НАЗВАНИЕ ХАРАКТЕРИСТИКИ и лучшее значение ТОЧНО В ЕГО ИСХОДНОМ ФОРМАТЕ ИЗ ВХОДНЫХ ДАННЫХ, БЕЗ ДОБАВЛЕНИЯ, УДАЛЕНИЯ ИЛИ ИЗМЕНЕНИЯ СИМВОЛОВ, ЕДИНИЦ ИЛИ ФОРМАТА).
+- Не меняй или не добавляй строки, если категория не подходит под критерии.
+- Не включай в ответ никакие другие комментарии, пояснения, символы или заголовки.
 
 **Критерии отбора:**
-1.  Характеристика должна быть объективно сравнимой (например, тактовая частота процессора, тип матрицы экрана, объем памяти). Чем выше число или новее/качественнее технология, тем лучше.
-2.  Если характеристику нельзя объективно сравнить для выявления ""лучшего"" (например, цвет, материал корпуса, артикул, название операционной системы), НЕ ВКЛЮЧАЙ ее в ответ.
-3.  Если все значения в категории идентичны и не имеют лучшего (например, все ""Смартфон"" или ""Нет""), НЕ ВКЛЮЧАЙ ее в ответ.
-4.  Характеристики отделены ';#;'
+1. Характеристика должна быть объективно сравнимой численно или по качеству (например, мощность в Вт, диаметр в мм, длина в м). Выбирай максимальное/лучшее значение только если есть различия после внутренней нормализации.
+2. Если характеристику нельзя объективно сравнить для выявления ""лучшего"" (например, цвет, материал, страна производства, тип патрона без различий), НЕ ВКЛЮЧАЙ ее в ответ.
+3. Если все значения в категории идентичны (или после внутренней нормализации становятся идентичными) и нет лучшего, НЕ ВКЛЮЧАЙ ее в ответ.
+4. При нормализации: используй ее только для внутреннего сравнения значений (например, для длины шнура преобразуй 200 см в 2 м мысленно, но выводи значение точно как в input для выбранного лучшего товара, без изменений).
+5. Если значение содержит единицу в input (например, ""Вт"", ""мм""), сохрани его как есть в выводе; если нет - не добавляй ничего. Не предполагай и не добавляй единицы или символы (например, не добавляй "" или м, если их нет в исходном значении лучшего варианта).
+6. Если несколько товаров имеют одинаковое лучшее значение (после нормализации), выбери значение из любого из них, но выводи его точно как в input для этого товара.
+
+**Пример анализа (не включай в ответ):**
+Для ""Мощность (Вт):200###100 Вт###150"" - внутренне нормализуй (предположи единицы совместимы), лучшее 200, вывод: Мощность (Вт): 200 (точно как в input).
+Для идентичных или несравнимых - пропусти.
 
 **Входные данные для анализа:**";
+            Console.WriteLine("Запрос нейросети...");
             ChatCompletion completion = client.CompleteChat(headerString + "\n" + charString);
-            foreach (var content in completion.Content)
-                Console.WriteLine(content.Text + "\n");
+            Console.WriteLine(completion.Content[0].Text);
             foreach (var line in completion.Content[0].Text.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
             {
-                var split = line.Split(": ", 2);
+                var split = line.Split(":", 2);
                 var name = split[0].Trim();
                 var value = split[1].Trim();
                 if (value == "null") continue;
@@ -107,8 +93,8 @@ namespace WebMarketCompare.Services
                 {
                     if (charac.Item2 == value)
                     {
-                        Console.WriteLine(name);
                         charac.Item1.Characteristics[name].IsBest = true;
+                        Console.WriteLine(name);
                     }
                 }
             }
@@ -178,8 +164,10 @@ namespace WebMarketCompare.Services
             }
 
 
-            var characteristicList = new List<List<string>>();
-            var aiString = @"You are an expert in data standardization for e-commerce product attributes. Your task is to analyze the provided list of product characteristics from multiple items (all under the ""Smartphones"" category) and identify pairs of attribute names that mean exactly the same thing (identical concepts or exact synonyms, not vaguely similar, partially overlapping, or where one is a subset/superset of the other). For each such pair, suggest standardizing by replacing one with the other.
+            if (!products.All(x => standardizer.IsInStandartSet(x.CategoryName)))
+            {
+                var characteristicList = new List<List<string>>();
+                var aiString = @"You are an expert in data standardization for e-commerce product attributes. Your task is to analyze the provided list of product characteristics from multiple items (all under the ""Smartphones"" category) and identify pairs of attribute names that mean exactly the same thing (identical concepts or exact synonyms, not vaguely similar, partially overlapping, or where one is a subset/superset of the other). For each such pair, suggest standardizing by replacing one with the other.
 The input data is a list of products, each starting with a category line (e.g., ""1 Смартфоны""), followed by lines in the format: ""{Attribute Name} Значение: {Attribute Value}"".
 Rules:
 
@@ -193,63 +181,75 @@ Output strictly in the format: {Attribute to replace}###{Standard attribute to r
 One pair per line.
 Do not include any explanations, additional text, headers, or other content—only the pairs if applicable.
 Dataset:" + "\n";
-            foreach (var product in products)
-            {
-                var charList = new List<string>();
-                foreach (var characteristic in product.Characteristics)
+                foreach (var product in products)
                 {
-                    if (!(nameDict.ContainsKey(characteristic.Key) && nameDict[characteristic.Key] == products.Count))
+                    var charList = new List<string>();
+                    foreach (var characteristic in product.Characteristics)
                     {
-                        charList.Add(characteristic.Key + " Значение: " + characteristic.Value.Value);
-                    }
-                }
-                characteristicList.Add(charList);
-            }
-            for (int i = 1; i < characteristicList.Count + 1; i++)
-            {
-                aiString += $"{i} {products[i - 1].CategoryName} \n";
-                foreach (var characteristic in characteristicList[i - 1])
-                {
-                    aiString += $"{characteristic}\n";
-                }
-                aiString += "\n";
-            }
-
-            //aiString += "Задача: сгруппируй только те характеристики, которые семантически эквивалентны (означают одно и то же, несмотря на разные названия) и без значений. Например, \"Встроенная память\" (Ozon) и \"Объем встроенной памяти (Гб)\" (Wildberries) — это одна группа, потому что они про одно и то же.\r\nПравила:\r\n\r\nКаждая группа должна содержать РОВНО ПО ОДНОЙ характеристике из Ozon и одной из Wildberries. Не больше, не меньше.\r\nОдна характеристика может быть ТОЛЬКО В ОДНОЙ группе — без дубликатов.\r\nГруппируй только если сопоставление логично и прямое. Не группируй несопоставимые вещи, например, общий \"Размеры, мм\" не группируй с отдельными \"Высота предмета\", \"Ширина предмета\", \"Толщина предмета\", потому что это разные уровни детализации.\r\nЕсли нет уверенного сопоставления для характеристики, не включай её ни в какую группу.\r\nВыводи только группы, где есть сопоставление. Не пиши одиночные характеристики или пустые группы.\r\n\r\nФормат вывода: Каждая группа на новой строке, характеристики в группе разделены \"###\". Без лишнего текста, объяснений или заголовков. Только список групп.\r\nПример правильного вывода на основе примера:\r\nВстроенная память###Объем встроенной памяти (Гб)\r\nСначала подумай шаг за шагом: перечисли все возможные пары, проверь на эквивалентность, отфильтруй несопоставимые.\r\nТеперь выполни задачу.";
-
-            ChatCompletion completion = client.CompleteChat(aiString);
-            var response = completion.Content[0].Text;
-            Console.WriteLine(response);
-
-            var renameDict = new Dictionary<string, string>();
-            foreach (var line in completion.Content[0].Text.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
-            {
-                var parts = line.Split("###");
-                foreach (var part in parts.Skip(1))
-                {
-                    renameDict[part.Trim()] = parts[0];
-                }
-            }
-
-            foreach (var product in products.Skip(1))
-            {
-                var newCharacteristics = new Dictionary<string, Characteristic>(product.Characteristics);
-                foreach (var characteristic in product.Characteristics)
-                {
-                    try
-                    {
-                        if (renameDict.ContainsKey(characteristic.Key))
+                        if (!(nameDict.ContainsKey(characteristic.Key) && nameDict[characteristic.Key] == products.Count))
                         {
-                            newCharacteristics[characteristic.Key].Name = renameDict[characteristic.Key];
-                            var newValue = newCharacteristics[characteristic.Key];
-                            newCharacteristics.Remove(characteristic.Key);
-                            newCharacteristics.Add(renameDict[characteristic.Key], newValue);
+                            charList.Add(characteristic.Key + " Значение: " + characteristic.Value.Value);
                         }
                     }
-                    catch { };
+                    characteristicList.Add(charList);
                 }
-                product.Characteristics = newCharacteristics;
+                for (int i = 1; i < characteristicList.Count + 1; i++)
+                {
+                    aiString += $"{i} {products[i - 1].CategoryName} \n";
+                    foreach (var characteristic in characteristicList[i - 1])
+                    {
+                        aiString += $"{characteristic}\n";
+                    }
+                    aiString += "\n";
+                }
+
+                aiString += "Задача: сгруппируй только те характеристики, которые семантически эквивалентны (означают одно и то же, несмотря на разные названия) и без значений. Например, \"Встроенная память\" (Ozon) и \"Объем встроенной памяти (Гб)\" (Wildberries) — это одна группа, потому что они про одно и то же.\r\nПравила:\r\n\r\nКаждая группа должна содержать РОВНО ПО ОДНОЙ характеристике из Ozon и одной из Wildberries. Не больше, не меньше.\r\nОдна характеристика может быть ТОЛЬКО В ОДНОЙ группе — без дубликатов.\r\nГруппируй только если сопоставление логично и прямое. Не группируй несопоставимые вещи, например, общий \"Размеры, мм\" не группируй с отдельными \"Высота предмета\", \"Ширина предмета\", \"Толщина предмета\", потому что это разные уровни детализации.\r\nЕсли нет уверенного сопоставления для характеристики, не включай её ни в какую группу.\r\nВыводи только группы, где есть сопоставление. Не пиши одиночные характеристики или пустые группы.\r\n\r\nФормат вывода: Каждая группа на новой строке, характеристики в группе разделены \"###\". Без лишнего текста, объяснений или заголовков. Только список групп.\r\nПример правильного вывода на основе примера:\r\nВстроенная память###Объем встроенной памяти (Гб)\r\nСначала подумай шаг за шагом: перечисли все возможные пары, проверь на эквивалентность, отфильтруй несопоставимые.\r\nТеперь выполни задачу.";
+
+                Console.WriteLine("Запрос нейросети...");
+                ChatCompletion completion = client.CompleteChat(aiString);
+                var response = completion.Content[0].Text;
+                Console.WriteLine(response);
+
+                var renameDict = new Dictionary<string, string>();
+                foreach (var line in completion.Content[0].Text.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    var parts = line.Split("###");
+                    foreach (var part in parts.Skip(1))
+                    {
+                        renameDict[part.Trim()] = parts[0];
+                    }
+                }
+
+                foreach (var product in products.Skip(1))
+                {
+                    var newCharacteristics = new Dictionary<string, Characteristic>(product.Characteristics);
+                    foreach (var characteristic in product.Characteristics)
+                    {
+                        try
+                        {
+                            if (renameDict.ContainsKey(characteristic.Key))
+                            {
+                                newCharacteristics[characteristic.Key].Name = renameDict[characteristic.Key];
+                                var newValue = newCharacteristics[characteristic.Key];
+                                newCharacteristics.Remove(characteristic.Key);
+                                newCharacteristics.Add(renameDict[characteristic.Key], newValue);
+                            }
+                        }
+                        catch { };
+                    }
+                    product.Characteristics = newCharacteristics;
+                }
             }
+        }
+
+        static string RemoveThinkSection(string input)
+        {
+            int thinkEnd = input.IndexOf("</think>");
+            if (thinkEnd != -1)
+            {
+                return input.Substring(thinkEnd + 8).TrimStart();
+            }
+            return input;
         }
     }
 }

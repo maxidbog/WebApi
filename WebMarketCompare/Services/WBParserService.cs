@@ -65,11 +65,9 @@ namespace WebMarketCompare.Services
                     .then(data => data)
                     .catch(error => 'Error: ' + error);
                 ";
-
+                        Console.WriteLine("Extracting JSON...");
                         driver.Navigate().GoToUrl(apiUrl);
-                        // Выполняем JavaScript и получаем результат
                         string jsonResult = js.ExecuteScript(script) as string;
-                        Console.WriteLine("JSON Response:");
                         //Console.WriteLine(jsonResult);
                         result.Add(jsonResult);
                         Task.Delay(10).Wait();
@@ -153,15 +151,17 @@ namespace WebMarketCompare.Services
 
             var vol = Sku.Substring(0, Sku.Length - 5);
             var part = Sku.Substring(0, Sku.Length - 3);
+            var basket = GetBasket(Sku);
 
             var url = "https://www.wildberries.ru/catalog/" + Sku +"/detail.aspx";
             product.ProductUrl = url;
 
-            var imageUrl = "https://ekt-basket-cdn-01.geobasket.ru/vol" + vol + "/part" + part + "/" + Sku + "/images/big/1.webp";
+            var imageUrl = "https://basket-" + basket + ".wbbasket.ru/vol" + vol + "/part" + part + "/" + Sku + "/images/big/1.webp";
             product.ImageUrl = imageUrl;
 
 
-            var apiUrlCard = "https://ekt-basket-cdn-01.geobasket.ru/vol" + vol + "/part" + part + "/" + Sku + "/info/ru/card.json";
+            var apiUrlCard = "https://basket-" + basket + ".wbbasket.ru/vol" + vol + "/part" + part + "/" + Sku + "/info/ru/card.json";
+            Console.WriteLine(apiUrlCard);
             var apiUrlDetails = "https://u-card.wb.ru/cards/v4/detail?appType=1&dest=12358514&nm=" + Sku;
 
             try
@@ -177,6 +177,166 @@ namespace WebMarketCompare.Services
                 _logger.LogError(ex, "Ошибка при парсинге товара WB: {url}", url);
                 throw;
             }
+        }
+
+        private string GetBasket (string sku)
+        {
+            string n;
+            var r = Convert.ToInt32(sku) / 100000;
+
+            if (r >= 0 && r <= 143)
+            {
+                n = "01";
+            }
+            else if (r <= 287)
+            {
+                n = "02";
+            }
+            else if (r <= 431)
+            {
+                n = "03";
+            }
+            else if (r <= 719)
+            {
+                n = "04";
+            }
+            else if (r <= 1007)
+            {
+                n = "05";
+            }
+            else if (r <= 1061)
+            {
+                n = "06";
+            }
+            else if (r <= 1115)
+            {
+                n = "07";
+            }
+            else if (r <= 1169)
+            {
+                n = "08";
+            }
+            else if (r <= 1313)
+            {
+                n = "09";
+            }
+            else if (r <= 1601)
+            {
+                n = "10";
+            }
+            else if (r <= 1655)
+            {
+                n = "11";
+            }
+            else if (r <= 1919)
+            {
+                n = "12";
+            }
+            else if (r <= 2045)
+            {
+                n = "13";
+            }
+            else if (r <= 2189)
+            {
+                n = "14";
+            }
+            else if (r <= 2405)
+            {
+                n = "15";
+            }
+            else if (r <= 2621)
+            {
+                n = "16";
+            }
+            else if (r <= 2837)
+            {
+                n = "17";
+            }
+            else if (r <= 3053)
+            {
+                n = "18";
+            }
+            else if (r <= 3269)
+            {
+                n = "19";
+            }
+            else if (r <= 3485)
+            {
+                n = "20";
+            }
+            else if (r <= 3701)
+            {
+                n = "21";
+            }
+            else if (r <= 3917)
+            {
+                n = "22";
+            }
+            else if (r <= 4133)
+            {
+                n = "23";
+            }
+            else if (r <= 4349)
+            {
+                n = "24";
+            }
+            else if (r <= 4565)
+            {
+                n = "25";
+            }
+            else if (r <= 4877)
+            {
+                n = "26";
+            }
+            else if (r <= 5189)
+            {
+                n = "27";
+            }
+            else if (r <= 5501)
+            {
+                n = "28";
+            }
+            else if (r <= 5813)
+            {
+                n = "29";
+            }
+            else if (r <= 6125)
+            {
+                n = "30";
+            }
+            else if (r <= 6437)
+            {
+                n = "31";
+            }
+            else if (r <= 6749)
+            {
+                n = "32";
+            }
+            else if (r <= 7061)
+            {
+                n = "33";
+            }
+            else if (r <= 7373)
+            {
+                n = "34";
+            }
+            else if (r <= 7685)
+            {
+                n = "35";
+            }
+            else if (r <= 7997)
+            {
+                n = "36";
+            }
+            else if (r <= 8309)
+            {
+                n = "37";
+            }
+            else
+            {
+                n = "38";
+            }
+            return n;
         }
 
         public async Task<Product> ParseProductByUrlAsync(string url)
