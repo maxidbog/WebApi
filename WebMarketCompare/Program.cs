@@ -1,5 +1,8 @@
 using System.Net;
 using WebMarketCompare.Services;
+using WebMarketCompare.Services.Ozon;
+using WebMarketCompare.Services.Wildberries;
+using WebMarketCompare.Services.YandexMarket;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +24,16 @@ builder.Services.AddHttpClient<IOzonParserService, OzonParserService>()
     });
 
 builder.Services.AddHttpClient<IWBParserService, WBParserService>()
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+    {
+        CookieContainer = new CookieContainer(),
+        AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
+        UseCookies = true,
+        AllowAutoRedirect = true,
+        UseProxy = false,
+        ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
+    });
+builder.Services.AddHttpClient<IYaMParserService, YaMParserService>()
     .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
     {
         CookieContainer = new CookieContainer(),

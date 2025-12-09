@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 using static System.Net.WebRequestMethods;
 
 
-namespace WebMarketCompare.Services
+namespace WebMarketCompare.Services.Wildberries
 {
     public class WBParserService : IWBParserService
     {
@@ -45,7 +45,7 @@ namespace WebMarketCompare.Services
                 try
                 {
                     // Убираем webdriver property
-                    IJavaScriptExecutor js = (IJavaScriptExecutor)driver;
+                    IJavaScriptExecutor js = driver;
                     driver.ExecuteScript("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})");
                     //Выполняем JavaScript запрос к API
                     var result = new List<string>();
@@ -153,7 +153,7 @@ namespace WebMarketCompare.Services
             var part = Sku.Substring(0, Sku.Length - 3);
             var basket = GetBasket(Sku);
 
-            var url = "https://www.wildberries.ru/catalog/" + Sku +"/detail.aspx";
+            var url = "https://www.wildberries.ru/catalog/" + Sku + "/detail.aspx";
             product.ProductUrl = url;
 
             var imageUrl = "https://basket-" + basket + ".wbbasket.ru/vol" + vol + "/part" + part + "/" + Sku + "/images/big/1.webp";
@@ -179,7 +179,7 @@ namespace WebMarketCompare.Services
             }
         }
 
-        private string GetBasket (string sku)
+        private string GetBasket(string sku)
         {
             string n;
             var r = Convert.ToInt32(sku) / 100000;

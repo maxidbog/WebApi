@@ -2,6 +2,9 @@
 using System.Text.Json.Nodes;
 using WebMarketCompare.Models;
 using WebMarketCompare.Services;
+using WebMarketCompare.Services.Ozon;
+using WebMarketCompare.Services.Wildberries;
+using WebMarketCompare.Services.YandexMarket;
 
 namespace WebMarketCompare.Controllers
 {
@@ -11,13 +14,15 @@ namespace WebMarketCompare.Controllers
     {
         private readonly IOzonParserService _ozonParserService;
         private readonly IWBParserService _wbParserService;
+        private readonly IYaMParserService _yaMParserService;
         private readonly ILogger<ProductsController> _logger;
 
-        public ProductsController(IOzonParserService ozonParserService, ILogger<ProductsController> logger, IWBParserService wbParserService)
+        public ProductsController(IOzonParserService ozonParserService, ILogger<ProductsController> logger, IWBParserService wbParserService, IYaMParserService yaMParserService)
         {
             _ozonParserService = ozonParserService;
             _logger = logger;
-            _wbParserService = wbParserService;
+            _wbParserService = wbParserService; 
+            _yaMParserService = yaMParserService;
         }
 
         [HttpGet("by-url")]
@@ -142,6 +147,11 @@ namespace WebMarketCompare.Controllers
                 case "www.wildberries.ru":
                     {
                         return await _wbParserService.ParseProductAsync(url);
+                        break;
+                    }
+                case "market.yandex.ru":
+                    {
+                        return await _yaMParserService.ParseProductAsync(url);
                         break;
                     }
 

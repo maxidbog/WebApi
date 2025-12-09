@@ -1,8 +1,8 @@
 ﻿using WebMarketCompare.Models;
 
-namespace WebMarketCompare.Services
+namespace WebMarketCompare.Services.Wildberries
 {
-    public interface IOzonParserService
+    public interface IWBParserService
     {
         Task<Product> ParseProductAsync(string productUrl);
         Task<Product> ParseProductBySkuAsync(string sku);

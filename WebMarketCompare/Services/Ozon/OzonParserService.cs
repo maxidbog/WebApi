@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 using static System.Net.WebRequestMethods;
 
 
-namespace WebMarketCompare.Services
+namespace WebMarketCompare.Services.Ozon
 {
     public class OzonParserService : IOzonParserService
     {
@@ -45,7 +45,7 @@ namespace WebMarketCompare.Services
                 try
                 {
                     // Убираем webdriver property
-                    IJavaScriptExecutor js = (IJavaScriptExecutor)driver;
+                    IJavaScriptExecutor js = driver;
                     driver.ExecuteScript("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})");
 
                     Task.Delay(100).Wait();
@@ -167,7 +167,7 @@ namespace WebMarketCompare.Services
             var apiUrlCharac = apiUrlMain + "&layout_container=pdpPage2column&layout_page_index=2";
             try
             {
-                var jsons = GetJsonsFromUrl(new List<string> { apiUrlMain, apiUrlCharac});
+                var jsons = GetJsonsFromUrl(new List<string> { apiUrlMain, apiUrlCharac });
                 ExtractProductData(jsons[0], product);
                 ExtractProductCharacteristics(jsons[1], product);
 
