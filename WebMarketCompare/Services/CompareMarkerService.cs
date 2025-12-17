@@ -9,7 +9,7 @@ namespace WebMarketCompare.Services
     public class CompareMarkerService
     {
         static ChatClient client = new ChatClient(
-            model: "gpt-5.1",
+            model: "gpt-5.2",
             credential: new ApiKeyCredential("sk-voidai-xFcSkgOmQA5ToUTKetA7xKWcScWDC_XZ6XFVWUqxgYCluJdv6vtl-5ebBs2BxInEEzcL4PqI9M5mtmKDBEDeuBUSOps1qYOd4iZ3hUIPZVCPIM9T9ptHHqgGiYAeN1ylZuirwA"),
             options: new OpenAIClientOptions()
             {

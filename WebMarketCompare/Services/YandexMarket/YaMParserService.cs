@@ -275,8 +275,8 @@ namespace WebMarketCompare.Services.YandexMarket
                 var parentNode = specDiv.ParentNode.ParentNode.ParentNode;
                 var spanPath = ".//span";
                 var specSpans = parentNode.SelectNodes(spanPath);
-                var name = specSpans[0].InnerHtml;
-                var value = specSpans[1].InnerHtml;
+                var name = specSpans[0].InnerHtml.Trim();
+                var value = specSpans[1].InnerHtml.Trim();
                 //Console.WriteLine(name + value);
                 product.Characteristics.Add(name, new Characteristic() { Name = name, Value = value, Category = product.CategoryName });
             }
