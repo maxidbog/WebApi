@@ -162,7 +162,7 @@ namespace WebMarketCompare.Services
                             }
                             catch
                             {
-                                Console.WriteLine($"Не удалось преобразовать {characteristic.Key} в {standardName}");
+                                Console.WriteLine($"Не удалось преобразовать {characteristic.Key} в {standardName} в {product.ProductName}");
                             }
                         }
                         else
@@ -173,7 +173,7 @@ namespace WebMarketCompare.Services
                     }
                     catch
                     {
-                        Console.WriteLine($"Не удалось обработать {characteristic.Key}");
+                        Console.WriteLine($"Не удалось обработать {characteristic.Key} в {product.ProductName}");
                     }
                 }
                 product.Characteristics = newProductCharacteristics;
