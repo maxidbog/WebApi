@@ -148,16 +148,30 @@ namespace WebMarketCompare.Services
                 foreach (var characteristic in product.Characteristics)
                 {
                     var standardName = standardizer.GetStandardName(characteristic.Key);
-                    if (standardName != null)
+                    try
                     {
-                        characteristic.Value.Name = standardName;
-                        newProductCharacteristics.Add(standardName, characteristic.Value);
-                        nameDict[standardName] = nameDict.ContainsKey(standardName) ? nameDict[standardName] + 1 : 1;
+                        if (standardName != null)
+                        {
+                            try
+                            {
+                                characteristic.Value.Name = standardName;
+                                newProductCharacteristics.Add(standardName, characteristic.Value);
+                                nameDict[standardName] = nameDict.ContainsKey(standardName) ? nameDict[standardName] + 1 : 1;
+                            }
+                            catch
+                            {
+                                Console.WriteLine($"Не удалось преобразовать {characteristic.Key} в {standardName}");
+                            }
+                        }
+                        else
+                        {
+                            newProductCharacteristics.Add(characteristic.Key, characteristic.Value);
+                            nameDict[characteristic.Key] = nameDict.ContainsKey(characteristic.Key) ? nameDict[characteristic.Key] + 1 : 1;
+                        }
                     }
-                    else
+                    catch
                     {
-                        newProductCharacteristics.Add(characteristic.Key, characteristic.Value);
-                        nameDict[characteristic.Key] = nameDict.ContainsKey(characteristic.Key) ? nameDict[characteristic.Key] + 1 : 1;
+                        Console.WriteLine($"Не удалось обработать {characteristic.Key}");
                     }
                 }
                 product.Characteristics = newProductCharacteristics;
