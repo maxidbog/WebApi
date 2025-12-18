@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.Design;
 using System.Text.Json.Nodes;
 using WebMarketCompare.Models;
 using WebMarketCompare.Services;
@@ -16,13 +17,15 @@ namespace WebMarketCompare.Controllers
         private readonly IWBParserService _wbParserService;
         private readonly IYaMParserService _yaMParserService;
         private readonly ILogger<ProductsController> _logger;
+        public static IStandardNamingService StandardNamingServiceInstance;
 
-        public ProductsController(IOzonParserService ozonParserService, ILogger<ProductsController> logger, IWBParserService wbParserService, IYaMParserService yaMParserService)
+        public ProductsController(IOzonParserService ozonParserService, ILogger<ProductsController> logger, IWBParserService wbParserService, IYaMParserService yaMParserService, IStandardNamingService standardNamingService)
         {
             _ozonParserService = ozonParserService;
             _logger = logger;
             _wbParserService = wbParserService; 
             _yaMParserService = yaMParserService;
+            StandardNamingServiceInstance = standardNamingService;
         }
 
         [HttpGet("by-url")]

@@ -1,3 +1,4 @@
+using System.ComponentModel.Design;
 using System.Net;
 using WebMarketCompare.Services;
 using WebMarketCompare.Services.Ozon;
@@ -43,6 +44,10 @@ builder.Services.AddHttpClient<IYaMParserService, YaMParserService>()
         UseProxy = false,
         ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
     });
+
+builder.Services.AddSingleton<IStandardNamingService, StandardNamingService>();
+
+builder.Services.AddHostedService<InitializationService>();
 
 // Настройка CORS для фронтенда
 builder.Services.AddCors(options =>

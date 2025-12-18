@@ -1,8 +1,10 @@
 ﻿using WebMarketCompare.Models;
+using WebMarketCompare.Controllers;
 using OpenAI;
 using OpenAI.Chat;
 using System.ClientModel;
 using System.Text.RegularExpressions;
+
 
 namespace WebMarketCompare.Services
 {
@@ -139,7 +141,7 @@ namespace WebMarketCompare.Services
         {
             if (products == null || products.Count < 2) return;
 
-            var standardizer = new StandardNaming();
+            var standardizer = ProductsController.StandardNamingServiceInstance;
             var nameDict = new Dictionary<string, int>();
 
             foreach (var product in products)
