@@ -44,10 +44,8 @@ namespace WebMarketCompare.Services.Wildberries
             {
                 try
                 {
-                    // Убираем webdriver property
                     IJavaScriptExecutor js = driver;
                     driver.ExecuteScript("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})");
-                    //Выполняем JavaScript запрос к API
                     var result = new List<string>();
                     foreach (var apiUrl in apiUrls)
                     {
@@ -87,11 +85,9 @@ namespace WebMarketCompare.Services.Wildberries
 
         private void ConfigureHttpClient()
         {
-            // Настройка безопасности TLS
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls13;
             ServicePointManager.ServerCertificateValidationCallback = (sender, cert, chain, errors) => true;
 
-            // Базовые настройки HttpClient
             _httpClient.Timeout = TimeSpan.FromSeconds(30);
             _httpClient.DefaultRequestHeaders.Clear();
 
@@ -113,18 +109,15 @@ namespace WebMarketCompare.Services.Wildberries
             _httpClient.DefaultRequestHeaders.Add("Sec-Fetch-Site", "none");
             _httpClient.DefaultRequestHeaders.Add("Upgrade-Insecure-Requests", "1");
 
-            // Настройка для автоматической обработки cookies
             var handler = new HttpClientHandler()
             {
                 CookieContainer = _cookieContainer,
                 AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
                 UseCookies = true,
                 AllowAutoRedirect = true,
-                UseProxy = false // Отключаем прокси для избежания дополнительных проблем
+                UseProxy = false
             };
 
-            // Если используем кастомный handler, нужно пересоздать HttpClient
-            // Но в нашем случае мы настроим его через DI
         }
 
         public async Task<Product> ParseProductAsync(string productUrl)

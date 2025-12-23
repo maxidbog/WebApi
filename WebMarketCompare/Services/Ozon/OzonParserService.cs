@@ -44,16 +44,14 @@ namespace WebMarketCompare.Services.Ozon
             {
                 try
                 {
-                    // Убираем webdriver property
                     IJavaScriptExecutor js = driver;
                     driver.ExecuteScript("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})");
 
                     Task.Delay(100).Wait();
 
-                    // Сначала посещаем основную страницу
                     driver.Navigate().GoToUrl("https://www.ozon.ru/api/entrypoint-api.bx/page/json/v2?url=https://www.ozon.ru/product/2124720386");
                     Task.Delay(2000).Wait();
-                    //Выполняем JavaScript запрос к API
+
                     var result = new List<string>();
                     foreach (var apiUrl in apiUrls)
                     {
@@ -92,11 +90,9 @@ namespace WebMarketCompare.Services.Ozon
 
         private void ConfigureHttpClient()
         {
-            // Настройка безопасности TLS
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls13;
             ServicePointManager.ServerCertificateValidationCallback = (sender, cert, chain, errors) => true;
 
-            // Базовые настройки HttpClient
             _httpClient.Timeout = TimeSpan.FromSeconds(30);
             _httpClient.DefaultRequestHeaders.Clear();
 
@@ -118,18 +114,14 @@ namespace WebMarketCompare.Services.Ozon
             _httpClient.DefaultRequestHeaders.Add("Sec-Fetch-Site", "none");
             _httpClient.DefaultRequestHeaders.Add("Upgrade-Insecure-Requests", "1");
 
-            // Настройка для автоматической обработки cookies
             var handler = new HttpClientHandler()
             {
                 CookieContainer = _cookieContainer,
                 AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
                 UseCookies = true,
                 AllowAutoRedirect = true,
-                UseProxy = false // Отключаем прокси для избежания дополнительных проблем
+                UseProxy = false
             };
-
-            // Если используем кастомный handler, нужно пересоздать HttpClient
-            // Но в нашем случае мы настроим его через DI
         }
 
         public async Task<Product> ParseProductAsync(string productUrl)
@@ -269,12 +261,10 @@ namespace WebMarketCompare.Services.Ozon
                             var brandDoc = JsonDocument.Parse(brandJson);
                             var brandRoot = brandDoc.RootElement;
 
-                            // Извлекаем бренд из content -> title -> text
                             if (brandRoot.TryGetProperty("content", out var contentElement) &&
                                 contentElement.TryGetProperty("title", out var titleElement) &&
                                 titleElement.TryGetProperty("text", out var textElement))
                             {
-                                // text может быть массивом, берем первый элемент с content
                                 if (textElement.ValueKind == JsonValueKind.Array)
                                 {
                                     foreach (var item in textElement.EnumerateArray())
@@ -299,7 +289,6 @@ namespace WebMarketCompare.Services.Ozon
                             var ratingDoc = JsonDocument.Parse(ratingJson);
                             var ratingRoot = ratingDoc.RootElement;
 
-                            // Парсим текст вида "4.8 • 609 отзывов"
                             if (ratingRoot.TryGetProperty("text", out var ratingTextProperty))
                             {
                                 var ratingText = ratingTextProperty.GetString();
@@ -313,7 +302,6 @@ namespace WebMarketCompare.Services.Ozon
                                             product.AverageRating = rating;
                                         }
 
-                                        // Извлекаем число из "609 отзывов"
                                         var reviewsText = parts[1].Trim();
                                         var digits = new string(reviewsText.Where(char.IsDigit).ToArray());
                                         if (int.TryParse(digits, out int reviewsCount))
@@ -413,17 +401,14 @@ namespace WebMarketCompare.Services.Ozon
                             var productDoc = JsonDocument.Parse(webCharacteristicsJson);
                             var rootDir = productDoc.RootElement;
 
-                            // Создаем список характеристик
                             var characteristics = product.Characteristics;
 
-                            // Получаем массив характеристик
                             if (rootDir.TryGetProperty("characteristics", out var characteristicsArray))
                             {
                                 foreach (var category in characteristicsArray.EnumerateArray())
                                 {
                                     var categoryName = characteristicsArray.GetArrayLength() == 1 ? null : category.GetProperty("title").GetString();
 
-                                    // Обрабатываем характеристики внутри категории
                                     if (category.TryGetProperty("short", out var shortArray))
                                     {
                                         foreach (var charItem in shortArray.EnumerateArray())
@@ -433,7 +418,6 @@ namespace WebMarketCompare.Services.Ozon
                                                 Name = charItem.GetProperty("name").GetString()
                                             };
 
-                                            // Получаем значения характеристики (может быть несколько)
                                             if (charItem.TryGetProperty("values", out var valuesArray))
                                             {
                                                 var values = new List<string>();

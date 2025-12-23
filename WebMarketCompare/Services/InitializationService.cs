@@ -19,7 +19,6 @@ namespace WebMarketCompare.Services
         {
             try
             {
-                // Сервис уже загружен в конструкторе, но можно добавить дополнительную логику
                 _logger.LogInformation("Dictionaries loaded successfully on startup");
                 return Task.CompletedTask;
             }

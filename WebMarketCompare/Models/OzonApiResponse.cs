@@ -13,7 +13,6 @@ namespace WebMarketCompare.Models
         public Dictionary<string, object> States { get; set; } = new();
     }
 
-    // Models для парсинга конкретных виджетов
     public class ProductHeadingWidget
     {
         [JsonProperty("title")]

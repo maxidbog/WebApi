@@ -90,11 +90,9 @@ namespace WebMarketCompare.Services.YandexMarket
 
         private void ConfigureHttpClient()
         {
-            // Настройка безопасности TLS
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls13;
             ServicePointManager.ServerCertificateValidationCallback = (sender, cert, chain, errors) => true;
 
-            // Базовые настройки HttpClient
             _httpClient.Timeout = TimeSpan.FromSeconds(30);
             _httpClient.DefaultRequestHeaders.Clear();
 
@@ -116,14 +114,13 @@ namespace WebMarketCompare.Services.YandexMarket
             _httpClient.DefaultRequestHeaders.Add("Sec-Fetch-Site", "none");
             _httpClient.DefaultRequestHeaders.Add("Upgrade-Insecure-Requests", "1");
 
-            // Настройка для автоматической обработки cookies
             var handler = new HttpClientHandler()
             {
                 CookieContainer = _cookieContainer,
                 AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
                 UseCookies = true,
                 AllowAutoRedirect = true,
-                UseProxy = false // Отключаем прокси для избежания дополнительных проблем
+                UseProxy = false
             };
         }
 
@@ -209,7 +206,9 @@ namespace WebMarketCompare.Services.YandexMarket
 
             try
             {
-                product.ReviewsCount = Convert.ToInt32(htmlDoc.DocumentNode.SelectSingleNode("//span[@data-auto=\"ratingCount\"]").InnerText.Split().First().Trim(new char[] { '(', ')' }).Replace('.', ','));
+                var text = htmlDoc.DocumentNode.SelectSingleNode("//span[@data-auto=\"ratingCount\"]").InnerText.Split().First().Trim(new char[] { '(', ')' }).Replace('.', ',');
+                if (text.Contains('K')) product.ReviewsCount = (int)(Convert.ToDouble(text.Substring(0, text.Length - 1)) * 1000);
+                else product.ReviewsCount = Convert.ToInt32(text);
             }
             catch { Console.WriteLine("Не удалось получить количество отзывов"); }
 
@@ -236,10 +235,10 @@ namespace WebMarketCompare.Services.YandexMarket
                         {
                             product.ProductName = title.GetString();
                         }
-                        if (buyOptionItem.TryGetProperty("skuId", out var skuId))
-                        {
-                            product.Article = skuId.GetString();
-                        }
+                        //if (buyOptionItem.TryGetProperty("skuId", out var skuId))
+                        //{
+                        //    product.Article = skuId.GetString();
+                        //}
                         if (buyOptionItem.TryGetProperty("categoryId", out var categoryId))
                         {
                             product.CategoryId = categoryId.GetString();
@@ -277,6 +276,7 @@ namespace WebMarketCompare.Services.YandexMarket
                 var specSpans = parentNode.SelectNodes(spanPath);
                 var name = specSpans[0].InnerHtml.Trim();
                 var value = specSpans[1].InnerHtml.Trim();
+                if(name == "Артикул Маркета") product.Article = value;
                 //Console.WriteLine(name + value);
                 product.Characteristics.Add(name, new Characteristic() { Name = name, Value = value, Category = product.CategoryName });
             }
