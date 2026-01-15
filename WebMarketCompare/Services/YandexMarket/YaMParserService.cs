@@ -278,7 +278,7 @@ namespace WebMarketCompare.Services.YandexMarket
                 var value = specSpans[1].InnerHtml.Trim();
                 if(name == "Артикул Маркета") product.Article = value;
                 //Console.WriteLine(name + value);
-                product.Characteristics.Add(name, new Characteristic() { Name = name, Value = value, Category = product.CategoryName });
+                product.Characteristics[name] = new Characteristic() { Name = name, Value = value, Category = product.CategoryName };
             }
         }
     }

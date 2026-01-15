@@ -366,7 +366,7 @@ namespace WebMarketCompare.Services.Wildberries
                 {
                     var charname = option.GetProperty("name").GetString();
                     var charvalue = option.GetProperty("value").GetString();
-                    product.Characteristics.Add(charname, new Characteristic { Category = product.CategoryName, Name = charname, Value = charvalue });
+                    product.Characteristics[charname] = new Characteristic { Category = product.CategoryName, Name = charname, Value = charvalue };
                 }
             }
 

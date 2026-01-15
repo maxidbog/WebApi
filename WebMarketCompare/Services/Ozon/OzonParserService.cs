@@ -430,7 +430,7 @@ namespace WebMarketCompare.Services.Ozon
 
                                             characteristic.Category = categoryName;
 
-                                            characteristics.Add(characteristic.Name, characteristic);
+                                            characteristics[characteristic.Name] = characteristic;
                                         }
                                     }
                                 }
